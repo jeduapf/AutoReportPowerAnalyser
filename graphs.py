@@ -10,20 +10,30 @@ from scipy.signal import find_peaks
 # TODO: Criar arquivos com graficos especificos 
 # TODO: Criar arquivo com grafios de balanceamento
 
-def add_peaks(fig, time, data, r, c, tipo = 'I'):
+def add_peaks(fig, time, data, r, c, tipo = 'I', top_peaks = 3):
     '''
         Add visual peaks to the power data graphs
         
         Inputs:
             fig: Plotly figure with the data
-            time: 
+            time: List of timestamp values of the collected data
+            data: List of values of the current data to be added peaks
+            r: Row of the subplot to be added the peaks 
+            c: Column of the subplot to be added the peaks
+            tipo: If type is V (tension) then it shouldn't surpass 5% of the mean. Else it shouldn't surpass 120% of the mean.
+            top_peaks: Int that gets the most top peaks found
+            
+        Output:
+            List of top peaks detected
+            "Add trace to existing plotly figure"
     '''
 
     # Get peaks
     if tipo == 'V':
         indices = find_peaks(data, threshold=0.05*np.mean(data))[0]
     else:
-        indices = find_peaks(data, threshold=1.05*np.mean(data))[0]
+        indices = find_peaks(data, threshold=1.20*np.mean(data))[0]
+        
     fig.add_trace(go.Scatter(
     x=[time[j] for j in indices] ,
     y=[data[j] for j in indices],
@@ -35,23 +45,46 @@ def add_peaks(fig, time, data, r, c, tipo = 'I'):
     ), showlegend=False,
     name='Detected Peaks'
     ),row=r, col=c)
+    
+    if len(indices) > top_peaks:
+        list_peaks = [(time[j],data[j]) for j in indices]
+        list_peaks.sort(key=lambda a: a[1], reverse=True)
+            
+        return list_peaks[0:top_peaks]
 
 def check_graph(grafico, elementos):
+    '''
+        Verify if the graph to be ploted exist between the data acquired
+        
+        Input:
+            grafico: String containing the name of the data to be ploted
+            elementos: List of Strings containing all data acquired from the power meter
+        
+        Output:
+            Bool: True if graph exist in element, false if not
+    '''
     if grafico in elementos:
         return True
     else:
         raise ValueError("Valor escolhido nao existente!")
         return False
 
+# DEPRECATED
 def input_plot(df, v_nom = 220):
     elementos = list(df.columns)
     df = df.sort_values(by="TIME")
     
+    # For each of the phases plot the graphs
     for ele in ['L1','L2','L3']:
+        
+        # Which type of analysis (MAX/MIN/AVG)
         for analysis in ['MAX']:
             
+            # List of graphs to be ploted in a single HTML
             graphs = [f'VRMS(V) {ele} {analysis}', f'IRMS(A) {ele} {analysis}', f'S(kVA) {ele} {analysis}', f'P(kW) {ele} {analysis}']
+            
             if analysis == 'MAX':
+                
                 # Define figure
                 fig = make_subplots(rows=4, cols=1, 
                                     vertical_spacing = 0.05, 
@@ -103,4 +136,105 @@ def input_plot(df, v_nom = 220):
                 
                 # fig.show()
                 fig.write_html(f"./{ele}_{analysis}.html")
-                fig.write_image(f"./{ele}_{analysis}.pdf", engine="kaleido")
+                # fig.write_image(f"./{ele}_{analysis}.pdf", engine="kaleido")
+                
+def get_ylabel_pt_br(unit):
+
+    if unit == 'V':
+        return 'Voltagem (V)'
+    elif unit == 'A':
+        return 'Amperes (A)'
+    elif unit == 'kVA':
+        return 'Potencia (kVA)'
+    elif unit == 'kW':
+        return 'Potencia Ativa (kW)'
+    elif unit == 'kvar':
+        return 'Potencia Reativa (kVAr)'
+    else:
+        raise ValueError("Unit not found")
+
+def add_peak_annotation(fig, k, graphs, list_peaks, top_peaks):
+    TEXT =  '''
+            <b>Top Picos:</b><br>
+            '''
+    for count in range(top_peaks):
+        TEXT += f'{list_peaks[count][0]} -> {list_peaks[count][1]}<br>'
+        
+    fig.add_annotation(text=TEXT,
+                        xref="paper", yref="paper",
+                        x=0.0, y=1-k*(1/len(graphs)+0.05), showarrow=False)
+    
+def add_subplots_peaks(df, fig, graphs, elementos, v_nom = 220, top_peaks = 3):
+    
+    # For each tipe of graph in the list of graphs in the report add subplot
+    for k in range(len(graphs)):
+        # Get unit of the graph
+        unit = graphs[k].split(')')[0].split('(')[-1]
+        
+        check_graph(graphs[k], elementos)
+        fig.add_trace(
+        go.Scatter(x = df['TIME'], y = df[graphs[k]], showlegend=False, marker_color='rgba(46,86,241,1)'),
+        row=k+1, col=1
+        )
+        
+        # If it is a Voltage graph add green safety tension region
+        if unit == 'V':
+            fig.add_hrect(y0=v_nom*0.95, y1=v_nom*1.05, line_width=0, fillcolor="green", opacity=0.3,row=k, col=1)
+            list_peaks = add_peaks(fig, list(df['TIME']), list(df[graphs[k]]),k+1,1,tipo = 'V', top_peaks = 3)
+            add_peak_annotation(fig, k, graphs, list_peaks, top_peaks)
+            
+        else:
+            if unit != 'kvar':
+                list_peaks = add_peaks(fig, list(df['TIME']), list(df[graphs[k]]),k+1,1, top_peaks = 3)
+                add_peak_annotation(fig, k, graphs, list_peaks, top_peaks)
+                
+        # edit axis labels
+        if k == 0:
+            fig['layout']['yaxis']['title']=get_ylabel_pt_br(unit)
+        else:
+            fig['layout'][f'yaxis{k+1}']['title']=get_ylabel_pt_br(unit)
+        
+    return fig
+
+def power_peaks_plot(df, v_nom = 220, dir = './'):
+    
+    elementos = list(df.columns)
+    df = df.sort_values(by="TIME")
+    
+    # For each of the phases plot the graphs
+    for ele in ['L1','L2','L3','ALL']:
+        
+        # Which type of analysis (MAX/MIN/AVG)
+        for analysis in ['MAX']:
+            
+            # List of graphs to be ploted in a single HTML
+            graphs = [f'P(kW) {ele} {analysis}', f'S(kVA) {ele} {analysis}', f'Q(kvar) {ele} {analysis}']
+            
+            # TODO: Acho que da na mesma nao tem diferenca MAX/MIN/AVG pro grafico...
+            if analysis == 'MAX':
+                
+                # Define figure
+                fig = make_subplots(rows=len(graphs), cols=1, 
+                                    vertical_spacing = 0.05, 
+                                    shared_xaxes=True, 
+                                    subplot_titles= graphs)
+                
+                fig = add_subplots_peaks(df, fig, graphs, elementos, v_nom = 220)
+                
+                fig.update_layout(
+                autosize=False,
+                width=2000,
+                height=500*len(graphs)+400,
+                title = {
+                        'text': f"Análise completa picos de potência ({ele}-{analysis})",
+                        'y':0.99, 
+                        'x':0.5,
+                        'xanchor': 'center',
+                        'yanchor': 'top'
+                        }
+                )
+                fig.update_yaxes(automargin=True)
+                
+                # fig.show()
+                fig.write_html(dir + f"{ele}_{analysis}.html")
+                # fig.write_image(f"./{ele}_{analysis}.pdf", engine="kaleido")
