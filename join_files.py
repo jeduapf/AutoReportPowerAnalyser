@@ -6,10 +6,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy.signal import find_peaks
-from graphs import input_plot
+from graphs import input_plot, power_peaks_plot
 
 global DIR
 DIR = os.getcwd()
+DIR_SESI = "C:/Users/jedua/OneDrive/Documents/Codes/Personal/MAR_722/Data/SESI"
 
 def generate_df(DIR = DIR):
     '''
@@ -51,13 +52,16 @@ def generate_df(DIR = DIR):
 
 def main():
     
-    # TODO: terminar de arrumar isso aqui 
-    dir = input('Coloque o diretorio dos arquivos')
-    if dir is None:
-        dir = DIR
+    df = generate_df(DIR_SESI)   
+    # # print(df.head(5))    
+    # # input_plot(df)
     
-    df = generate_df(dir)       
-    input_plot(df)
-    
+    power = os.path.join(DIR, 'power_analysis')
+    try: 
+        os.mkdir(power) 
+    except OSError as error: 
+        print(error)  
+    power_peaks_plot(df, v_nom = 220, dir = power.replace('\\','/') + '/')
+        
 if __name__ == "__main__":
     main()
