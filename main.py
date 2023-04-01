@@ -17,26 +17,28 @@ def get_fs(df, unit = 'milliseconds'):
     
     return 1/np.mean(np.diff(time)/k)
 
-def main():
-    
-    for file in os.listdir(DIR): 
+def single_file():
+    file = input("Entre o nome do arquivo\n")
+    if file in os.listdir(DIR): 
         
-        # TODO: Retirar o '1'
-        if file.endswith(" 1.csv"):
+        if file.endswith(".csv"):
             
             df = pd.read_csv(os.path.join(DIR,file))
             # Add new column with only time
             df['time'] = pd.to_datetime(df.TIME).dt.strftime('%H:%M:%S')
+            print(df['time'])
             
             elementos = list(df.columns)
-            grafico = input(f"\n\tEscolha dentre as possibilidades:\n\n{elementos}\n\n")
+            grafico = input(f"\n\n{elementos}\n\n\tEscolha dentre as possibilidades acima\n")
             if grafico not in elementos:
                 raise ValueError("Valor escolhido nao existente!")
-            
-            fig = px.line(df, x='time', y=grafico)
+        
+            fig = px.line(df, x='time', y=grafico,
+                          title = f"<b>{grafico}</b><br><sup>Freq. Amostragem = {get_fs(df):.3f}</sup>")
             fig.show()
             
-            print(get_fs(df))
-
+def main():
+    single_file()
+            
 if __name__ == "__main__":
     main()
