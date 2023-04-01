@@ -238,3 +238,58 @@ def power_peaks_plot(df, v_nom = 220, dir = './'):
                 # fig.show()
                 fig.write_html(dir + f"{ele}_{analysis}.html")
                 # fig.write_image(f"./{ele}_{analysis}.pdf", engine="kaleido")
+
+def get_unit(ele):
+    if ele == 'P':
+        return 'kW'
+    elif ele == 'Q':
+        return 'kvar'
+    elif ele == 'S':
+        return 'kVA'
+                
+def phase_balance_plot(df):
+    
+    elementos = list(df.columns)
+    df = df.sort_values(by="TIME")
+    
+    bar_dict = {}
+    # Which type of analysis (MAX/MIN/AVG)
+    for analysis in ['MAX']:
+        
+        # For each of the phases plot the graphs
+        for ele in ['P','S']:
+            
+            # List of graphs to be ploted in a single HTML
+            graphs = [f'{ele}({get_unit(ele)}) L1 {analysis}', f'{ele}({get_unit(ele)}) L2 {analysis}', f'{ele}({get_unit(ele)}) L3 {analysis}']
+            
+            L1 = np.array(df[graphs[0]])
+            L2 = np.array(df[graphs[1]])
+            L3 = np.array(df[graphs[2]])
+
+            s = (L1+L2+L3)
+            s[s == 0] = np.nan
+            
+            perc_L1 = np.divide(L1,s)
+            perc_L2 = np.divide(L2,s)
+            perc_L3 = np.divide(L3,s)
+            
+            final_L1 = 100*np.mean(perc_L1)
+            final_L2 = 100*np.mean(perc_L2)
+            final_L3 = 100*np.mean(perc_L3)
+            
+            bar_dict[f'{ele}({get_unit(ele)})'] = [final_L1,final_L2,final_L3]
+        
+        fig = make_subplots(rows=1, cols=2, 
+                                    vertical_spacing = 0.05, 
+                                    shared_xaxes=True, 
+                                    subplot_titles= 'Balanço energético de fases')
+        
+        # TODO: TERMINAR
+        print(bar_dict)
+        x = ['P(kW)', 'S(kVA)']
+        bar_dict['P(kW)'],bar_dict['S(kVA)']
+        fig = go.Figure(go.Bar(x=x, y=, name='Montreal'))
+        fig.add_trace(go.bar(x = x,y=, name = 'P(kW)'), row=1, col=1)
+        fig.add_trace(go.bar(x = x,y=, name = 'S(kVA)'), row=1, col=2)
+        fig.update_layout(barmode="relative")
+        fig.show()

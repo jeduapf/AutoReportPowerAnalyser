@@ -6,7 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy.signal import find_peaks
-from graphs import input_plot, power_peaks_plot
+from graphs import input_plot, power_peaks_plot, phase_balance_plot
 
 global DIR
 DIR = os.getcwd()
@@ -52,16 +52,25 @@ def generate_df(DIR = DIR):
 
 def main():
     
-    df = generate_df(DIR_SESI)   
+    df = generate_df(DIR)   
     # # print(df.head(5))    
     # # input_plot(df)
     
-    power = os.path.join(DIR, 'power_analysis')
-    try: 
-        os.mkdir(power) 
-    except OSError as error: 
-        print(error)  
-    power_peaks_plot(df, v_nom = 220, dir = power.replace('\\','/') + '/')
-        
+    # #
+    # # POWER ANALYSIS
+    # #
+    # power = os.path.join(DIR, 'power_analysis')
+    # try: 
+    #     os.mkdir(power) 
+    # except OSError as error: 
+    #     print(error)  
+    # power_peaks_plot(df, v_nom = 220, dir = power.replace('\\','/') + '/')
+    # power_peaks_plot(df, v_nom = 220, dir = DIR)
+       
+    #
+    # BALANCE ANALYSIS
+    #
+    phase_balance_plot(df)
+    
 if __name__ == "__main__":
     main()
