@@ -1,5 +1,6 @@
 import numpy as np
 
+import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -162,7 +163,7 @@ def add_peak_annotation(fig, k, graphs, list_peaks, top_peaks):
         
     fig.add_annotation(text=TEXT,
                         xref="paper", yref="paper",
-                        x=0.0, y=1-k*(1/len(graphs)+0.05), showarrow=False)
+                        x=0.0, y=1-k*(1/len(graphs) + 0.025), showarrow=False)
     
 def add_subplots_peaks(df, fig, graphs, elementos, v_nom = 220, top_peaks = 3):
     
@@ -247,7 +248,7 @@ def get_unit(ele):
     elif ele == 'S':
         return 'kVA'
                 
-def phase_balance_plot(df):
+def phase_balance_plot(df, dir = './'):
     
     elementos = list(df.columns)
     df = df.sort_values(by="TIME")
@@ -269,9 +270,18 @@ def phase_balance_plot(df):
             s = (L1+L2+L3)
             s[s == 0] = np.nan
             
+            if ele == 'P':
+                sum_p = s
+            elif ele == 'S':
+                sum_s = s
+            
             perc_L1 = np.divide(L1,s)
             perc_L2 = np.divide(L2,s)
             perc_L3 = np.divide(L3,s)
+            
+            perc_L1[perc_L1 == np.nan] = 0
+            perc_L2[perc_L2 == np.nan] = 0
+            perc_L3[perc_L3 == np.nan] = 0
             
             final_L1 = 100*np.mean(perc_L1)
             final_L2 = 100*np.mean(perc_L2)
@@ -279,17 +289,77 @@ def phase_balance_plot(df):
             
             bar_dict[f'{ele}({get_unit(ele)})'] = [final_L1,final_L2,final_L3]
         
-        fig = make_subplots(rows=1, cols=2, 
-                                    vertical_spacing = 0.05, 
-                                    shared_xaxes=True, 
-                                    subplot_titles= 'Balanço energético de fases')
+        # Power factor figure
+        fp = np.abs(sum_p/sum_s)
+        fp[fp == np.nan] = 0
+        mean_fp = np.mean(fp)
+        fig_fp = px.line(x = df['TIME'], y = fp, title="Fator de potência instantâneo")
+        fig_fp.update_layout(xaxis_title="Tempo (s)",
+                             yaxis_title="Fator de potência (0-1)")
+        fig_fp.write_html(dir + f"fp_{analysis}.html")
         
-        # TODO: TERMINAR
-        print(bar_dict)
+        # Balance figure
         x = ['P(kW)', 'S(kVA)']
-        bar_dict['P(kW)'],bar_dict['S(kVA)']
-        fig = go.Figure(go.Bar(x=x, y=, name='Montreal'))
-        fig.add_trace(go.bar(x = x,y=, name = 'P(kW)'), row=1, col=1)
-        fig.add_trace(go.bar(x = x,y=, name = 'S(kVA)'), row=1, col=2)
-        fig.update_layout(barmode="relative")
-        fig.show()
+        y = []
+        for count in range(len(graphs)):
+            y.append([bar_dict['P(kW)'][count],bar_dict['S(kVA)'][count]])
+        
+        fig = go.Figure(go.Bar(x = x, y = y[0], name='L1'))
+        fig.add_trace(go.Bar(x = x,y = y[1], name = 'L2'))
+        fig.add_trace(go.Bar(x = x,y = y[2], name = 'L3'))
+        fig.update_layout(  barmode="relative",
+                            title={
+                                    'text': "Balanço de fases",
+                                    'y':0.95,
+                                    'x':0.5,
+                                    'xanchor': 'center',
+                                    'yanchor': 'top'},
+                            xaxis_title="Unidade",
+                            yaxis_title="Porcentagem",
+                            legend_title="Fase",
+                            )
+        fig.add_annotation(text=f'fator de potência médio:<br><b>{mean_fp:.03f}</b>',
+                        xref="paper", yref="paper",
+                        x=0.5, y=0.55, showarrow=False)
+        # fig.show()
+        fig.write_html(dir + f"balance_{analysis}.html")
+
+def current_peaks_plot(df, v_nom = 220, dir = './'):
+    
+    elementos = list(df.columns)
+    df = df.sort_values(by="TIME")
+        
+    # Which type of analysis (MAX/MIN/AVG)
+    for analysis in ['MAX']:
+        
+        # List of graphs to be ploted in a single HTML
+        graphs = [f'IRMS(A) L1 {analysis}', f'IRMS(A) L2 {analysis}', f'IRMS(A) L3 {analysis}', f'IRMS(A) N {analysis}']
+        
+        # TODO: Acho que da na mesma nao tem diferenca MAX/MIN/AVG pro grafico...
+        if analysis == 'MAX':
+            
+            # Define figure
+            fig = make_subplots(rows=len(graphs), cols=1, 
+                                vertical_spacing = 0.05, 
+                                shared_xaxes=True, 
+                                subplot_titles= graphs)
+            
+            fig = add_subplots_peaks(df, fig, graphs, elementos, v_nom = 220)
+            
+            fig.update_layout(
+            autosize=False,
+            width=2000,
+            height=500*len(graphs)+400,
+            title = {
+                    'text': f"Análise completa picos de corrente ({analysis})",
+                    'y':0.99, 
+                    'x':0.5,
+                    'xanchor': 'center',
+                    'yanchor': 'top'
+                    }
+            )
+            fig.update_yaxes(automargin=True)
+            
+            # fig.show()
+            fig.write_html(dir + f"current_{analysis}.html")
+            # fig.write_image(f"./{ele}_{analysis}.pdf", engine="kaleido")
