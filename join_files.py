@@ -9,8 +9,12 @@ from scipy.signal import find_peaks
 from graphs import input_plot, power_peaks_plot, phase_balance_plot,current_peaks_plot
 
 global DIR
-DIR = os.getcwd()
-DIR_SvESI = "C:/Users/jedua/OneDrive/Documents/Codes/Personal/MAR_722/Data/SESI"
+# DIR = os.getcwd()
+
+# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-IMPORTANT*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+# Change Directory to DATA for all data
+# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-IMPORTANT*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+DIR = "C:/Users/jedua/OneDrive/Bureau/HSH/HSH_3"
 
 def generate_df(DIR = DIR):
     '''
@@ -29,6 +33,7 @@ def generate_df(DIR = DIR):
     file = next(iteration_files)
     flag = True
 
+    print('\n\n\t Recuperando arquivos...')
     while file:
         # If it is the first file just open it 
         if flag:
@@ -52,22 +57,18 @@ def generate_df(DIR = DIR):
 
 def main():
     
-    # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-IMPORTANT*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-    # Change Directory to DATA for all data
-    # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-IMPORTANT*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-    df = generate_df(DIR = "C:/Users/jedua/OneDrive/Documents/Codes/Personal/MAR_722/Data/SESI")   
+    df = generate_df(DIR)   
     
-    # #
-    # # POWER ANALYSIS
-    # #
-    # print('\n\n\t Iniciando análise de potência...')
-    # power = os.path.join(DIR, 'power_analysis')
-    # try: 
-    #     os.mkdir(power) 
-    # except OSError as error: 
-    #     print(error)  
-    # power_peaks_plot(df, v_nom = 220, dir = power.replace('\\','/') + '/')
-    # power_peaks_plot(df, v_nom = 220, dir = DIR)
+    #
+    # POWER ANALYSIS
+    #
+    print('\n\n\t Iniciando análise de potência...')
+    power = os.path.join(DIR, 'power_analysis')
+    try: 
+        os.mkdir(power) 
+    except OSError as error: 
+        print(error)  
+    power_peaks_plot(df, v_nom = 220, dir = power.replace('\\','/') + '/')
     
     #
     # CURRENT ANALYSIS

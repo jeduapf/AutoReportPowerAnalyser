@@ -36,6 +36,8 @@ def single_file():
             fig = px.line(df, x='time', y=grafico,
                           title = f"<b>{grafico}</b><br><sup>Freq. Amostragem = {get_fs(df):.3f}</sup>")
             fig.show()
+    else:
+        raise NameError(f'Arquivo {file} nao existe')
             
 def main():
     single_file()
