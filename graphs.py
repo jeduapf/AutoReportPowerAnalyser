@@ -12,7 +12,7 @@ from scipy.signal import find_peaks
 # TODO: Criar arquivo com grafios de balanceamento
 
 global peak_sensibility,smooth_per
-smooth_per = 0.8
+smooth_per = 0.6
 peak_sensibility = 1.05
 
 def add_peaks(fig, time, data, r, c, tipo = 'I', top_peaks = 3):
@@ -115,25 +115,27 @@ def add_subplots_peaks(df, fig, graphs, elementos, v_nom = 220, top_peaks = 3):
     # For each tipe of graph in the list of graphs in the report add subplot
     for k in range(len(graphs)):
         # Get unit of the graph
-        unit = graphs[k].split(')')[0].split('(')[-1]
+        unit = graphs[k].split(')')[0].split('(')[-1].replace(" ", "")
+        print(graphs[k])
+        print(unit)
+        print(' ')
 
-        
         check_graph(graphs[k], elementos)
         fig.add_trace(
         go.Scatter(x = df['TIME'], y = df[graphs[k]], showlegend=False, marker_color='rgba(46,86,241,1)'),
         row=k+1, col=1
         )
-        per = int(smooth_per*len(df[graphs[k]])/100)
         
+        # Moving average
+        per = int(smooth_per*len(df[graphs[k]])/100)
         fig.add_trace(
         go.Scatter(x=df['TIME'], y=df[graphs[k]].rolling(per).mean(), line=dict(color='red', width=3), name=f"Media movel {per} pontos"), # Mean average
         row=k+1, col=1
         )
         
-        
         # If it is a Voltage graph add green safety tension region
         if unit == 'V':
-            fig.add_hrect(y0=v_nom*0.95, y1=v_nom*1.05, line_width=0, fillcolor="green", opacity=0.3,row=k, col=1)
+            fig.add_hrect(y0=v_nom*0.95, y1=v_nom*1.05, line_width=0, fillcolor="green", opacity=0.25,row=k, col=1)
             list_peaks,size = add_peaks(fig, list(df['TIME']), list(df[graphs[k]]),k+1,1,tipo = 'V', top_peaks = 3)
             if size is None:
                 add_peak_annotation(fig, k, graphs, list_peaks, top_peaks)
@@ -392,3 +394,40 @@ def input_plot(df, v_nom = 220):
                 # fig.show()
                 fig.write_html(f"./{ele}_{analysis}.html")
                 # fig.write_image(f"./{ele}_{analysis}.pdf", engine="kaleido")
+
+def voltage_plot(df, v_nom = 220, dir = './'):
+    
+    elementos = list(df.columns)
+    df = df.sort_values(by="TIME")
+    
+    # For each of the phases plot the graphs
+    for ele in ['L1','L2','L3','N']:
+        
+        # List of graphs to be ploted in a single HTML
+        graphs = [f'VRMS(V) {ele} MAX', f'VRMS(V) {ele} AVG', f'VRMS(V) {ele} MIN']
+        
+        # Define figure
+        fig = make_subplots(rows=len(graphs), cols=1, 
+                            vertical_spacing = 0.05, 
+                            shared_xaxes=True, 
+                            subplot_titles= graphs)
+        
+        fig = add_subplots_peaks(df, fig, graphs, elementos, v_nom = 220)
+
+        fig.update_layout(
+        autosize=False,
+        width=2000,
+        height=500*len(graphs)+400,
+        title = {
+                'text': f"Análise completa da tensão ({ele})",
+                'y':0.99, 
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+                }
+        )
+        fig.update_yaxes(automargin=True)
+        
+        # fig.show()
+        fig.write_html(dir + f"tensao_{ele}.html")
+        # fig.write_image(f"./{ele}_{analysis}.pdf", engine="kaleido")

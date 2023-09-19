@@ -6,7 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy.signal import find_peaks
-from graphs import input_plot, power_peaks_plot, phase_balance_plot,current_peaks_plot
+from graphs import input_plot, power_peaks_plot, phase_balance_plot,current_peaks_plot,voltage_plot
 
 global DIR
 # DIR = os.getcwd()
@@ -14,7 +14,7 @@ global DIR
 # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-IMPORTANT*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 # Change Directory to DATA for all data
 # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-IMPORTANT*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-DIR = "C:/Users/jedua/OneDrive/Bureau/HSH/HSH_3"
+DIR = "C:/Users/jedua/OneDrive/Bureau/Pai"
 
 def generate_df(DIR = DIR):
     '''
@@ -58,7 +58,18 @@ def generate_df(DIR = DIR):
 def main():
     
     df = generate_df(DIR)   
-    
+
+    #
+    # VOLTAGE ANALYSIS
+    #
+    print('\n\n\t Iniciando análise de tensão...')
+    voltage = os.path.join(DIR, 'voltage_analysis')
+    try: 
+        os.mkdir(voltage) 
+    except OSError as error: 
+        print(error)  
+    voltage_plot(df, v_nom = 220, dir = voltage.replace('\\','/') + '/')
+
     #
     # POWER ANALYSIS
     #
