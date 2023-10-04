@@ -14,7 +14,7 @@ global DIR
 # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-IMPORTANT*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 # Change Directory to DATA for all data
 # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-IMPORTANT*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-DIR = "C:/Users/jedua/OneDrive/Bureau/Pai"
+DIR = "C:/Users/jedua/OneDrive/Documents/HSH/Pai/Depois"
 
 def generate_df(DIR = DIR):
     '''

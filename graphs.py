@@ -12,7 +12,7 @@ from scipy.signal import find_peaks
 # TODO: Criar arquivo com grafios de balanceamento
 
 global peak_sensibility,smooth_per
-smooth_per = 0.6
+smooth_per = 0.45
 peak_sensibility = 1.05
 
 def add_peaks(fig, time, data, r, c, tipo = 'I', top_peaks = 3):
@@ -116,6 +116,8 @@ def add_subplots_peaks(df, fig, graphs, elementos, v_nom = 220, top_peaks = 3):
     for k in range(len(graphs)):
         # Get unit of the graph
         unit = graphs[k].split(')')[0].split('(')[-1].replace(" ", "")
+
+        # Prints to check units 
         print(graphs[k])
         print(unit)
         print(' ')
